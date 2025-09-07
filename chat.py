@@ -29,35 +29,29 @@ suggested_topics = [
 # Step 1: Enter the topic first
 st.subheader("Step 1: Enter Discussion Topic")
 
-# Initialize session state for topic
 if "topic" not in st.session_state:
     st.session_state.topic = ""
 
-# Input field for topic
 topic_input = st.text_input("Enter a topic for the agents to discuss:", value=st.session_state.topic)
 
-# Display exciting topic suggestions
 if not topic_input:
     st.markdown("**TRY:** " + ", ".join([f"`{t}`" for t in suggested_topics]))
 
-# Allow user to click on suggestions to auto-fill the topic
 if not topic_input:
     selected_topic = st.selectbox("Or select from popular topics:", [""] + suggested_topics)
     if selected_topic:
-        st.session_state.topic = selected_topic  # Store in session state
-        topic_input = selected_topic  # Auto-fill the text input
+        st.session_state.topic = selected_topic
+        topic_input = selected_topic
 
-# Update session state with the entered topic
 if topic_input:
     st.session_state.topic = topic_input
-    topic = topic_input  # Use this as the topic variable
+    topic = topic_input
 else:
     topic = None
 
-# Proceed only if a topic is entered
 if topic:
     st.success(f"Topic selected: {topic}. Now configure your settings.")
-    
+
     # Step 2: Sidebar for API keys and settings
     st.sidebar.header("Step 2: Settings")
     st.sidebar.write(
@@ -67,24 +61,34 @@ if topic:
     groq_api_key = st.sidebar.text_input("Groq API Key", type="password")
     serpapi_key = st.sidebar.text_input("SerpAPI Key", type="password")
     turns = st.sidebar.slider("Number of Turns", min_value=1, max_value=10, value=3)
-    
-    # Initialize API clients only if all keys are entered
+
+    # Editable model selection
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Model Selection (Editable)")
+    alex_model = st.sidebar.text_input(
+        "Alex (GPT-3.5) Model", value="gpt-3.5-turbo"
+    )
+    luna_model = st.sidebar.text_input(
+        "Luna (LLaMA) Model", value="llama-3.3-70b-versatile"  # use up-to-date model by default!
+    )
+    gina_model = st.sidebar.text_input(
+        "Gina (GPT-4o) Model", value="gpt-4o"
+    )
+
     if openai_api_key and groq_api_key and serpapi_key:
         openai_client = OpenAI(api_key=openai_api_key)
         groq_client = Groq(api_key=groq_api_key)
     else:
         st.error("Please provide all three API keys in the sidebar.")
         st.stop()
-    
-    # Define agents
+
     agents = [
-        {"name": "Alex (GPT-3.5)", "client": openai_client, "model": "gpt-3.5-turbo"},
-        {"name": "Luna (LLaMA)", "client": groq_client, "model": "llama3-70b-8192"},
-        {"name": "Gina (GPT-4o)", "client": openai_client, "model": "gpt-4o"}
+        {"name": "Alex (GPT-3.5)", "client": openai_client, "model": alex_model},
+        {"name": "Luna (LLaMA)", "client": groq_client, "model": luna_model},
+        {"name": "Gina (GPT-4o)", "client": openai_client, "model": gina_model}
     ]
-    
+
     def web_search(query):
-        """Improved web search using SerpAPI with sidebar parameter."""
         try:
             if not serpapi_key:
                 return "Search failed: SerpAPI key not provided."
@@ -99,7 +103,7 @@ if topic:
             if "organic_results" in data:
                 results = data["organic_results"]
                 search_summary = ""
-                for result in results[:2]:  # Get the top 2 results
+                for result in results[:2]:
                     title = result.get("title", "No title")
                     link = result.get("link", "No link")
                     snippet = result.get("snippet", "No description")
@@ -111,7 +115,6 @@ if topic:
             return f"Search failed: {str(e)}"
 
     def get_response(agent, chat_history, topic):
-        """Generate a response with enhanced contextual memory and dynamic interaction."""
         system_prompt = (
             f"You are {agent['name']}, an AI participating in a group discussion. "
             f"Your role is to actively engage in the conversation, build on previous arguments, ask questions, "
@@ -133,7 +136,6 @@ if topic:
                 temperature=0.7
             )
             text = response.choices[0].message.content.strip()
-            # Handle web search if requested
             if text.startswith("SEARCH:"):
                 query = text.split("SEARCH:")[1].strip()
                 search_result = web_search(query)
@@ -142,7 +144,6 @@ if topic:
         except Exception as e:
             return f"Error: {str(e)}"
 
-    # Main app logic
     st.subheader("Step 3: Start Discussion")
     if st.button("Start Discussion"):
         chat_history = f"Discussion Topic: {topic}\n\n"
