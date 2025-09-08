@@ -1,4 +1,4 @@
-# 3-Agent LLM Discussion with Contextual Memory and Dynamic Interaction
+Agent LLM Discussion with Contextual Memory and Dynamic Interaction
 
 This **Streamlit** application simulates a dynamic, multi-agent discussion between three AI agents powered by **OpenAI** and **Groq** models. The conversation maintains full context across multiple turns, ensuring that agents build on, challenge, and support each other’s arguments for a more engaging, debate-like experience.
 
